@@ -59,6 +59,10 @@ Frontend: set `VITE_API_URL` to the backend's public URL when building for produ
 
 ## Deploy
 
+For Azure, follow the step-by-step guide in [DEPLOY_AZURE.md](DEPLOY_AZURE.md).
+
+Other hosts:
+
 Netlify serves static sites and JavaScript functions; it cannot run a Java server. So:
 
 1. **Backend** on a host that runs Docker or Java (for example Render, Railway, Fly.io or Koyeb) using
