@@ -6,6 +6,7 @@ import { useAuth } from '../auth.jsx';
 import * as api from '../api.js';
 import { PLATFORMS, averageWords, buildData, pageIssues, pathOf, redditMentions } from '../lib/analysis.js';
 import { renderMarkdown } from '../lib/markdown.js';
+import { downloadPdfReport } from '../lib/pdfReport.js';
 
 const STEPS = ['Check site', 'Crawl pages', 'Write reports'];
 const CONCURRENCY = 4;
@@ -74,6 +75,7 @@ export default function Dashboard() {
   const [pages, setPages] = useState([]);
   const [reports, setReports] = useState({});
   const [tab, setTab] = useState('google');
+  const [exporting, setExporting] = useState(false);
 
   const running = step >= 0 && step < 3;
   const blocked = discovery ? discovery.robots.bots.filter((b) => b.status === 'blocked').length : 0;
@@ -130,14 +132,16 @@ export default function Dashboard() {
     }
   }
 
-  function download() {
-    const parts = [`# AI Rank Checker report for ${discovery.site}`];
-    for (const p of PLATFORMS) if (reports[p.id]?.text) parts.push(`\n\n## ${p.name}\n\n${reports[p.id].text}`);
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(new Blob([parts.join('')], { type: 'text/markdown' }));
-    link.download = `${discovery.site}-rank-report.md`;
-    link.click();
-    URL.revokeObjectURL(link.href);
+  async function download() {
+    setExporting(true);
+    setError('');
+    try {
+      await downloadPdfReport({ discovery, pages, reports });
+    } catch {
+      setError('Could not create the PDF. Try again.');
+    } finally {
+      setExporting(false);
+    }
   }
 
   return (
@@ -201,8 +205,8 @@ export default function Dashboard() {
           <section className="card">
             <div className="card-head">
               <h2>Why it is not ranking, and what to change</h2>
-              <button type="button" className="btn btn-outline" onClick={download} disabled={!anyReport || running}>
-                Download report
+              <button type="button" className="btn btn-outline" onClick={download} disabled={!anyReport || running || exporting}>
+                {exporting ? 'Preparing PDF…' : 'Download PDF report'}
               </button>
             </div>
             <div className="tabs" role="tablist">
