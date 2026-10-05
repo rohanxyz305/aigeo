@@ -5,7 +5,14 @@ export function Logo() {
   return (
     <Link to="/" className="logo" aria-label="AI Rank Checker home">
       <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
-        <rect width="32" height="32" rx="8" fill="var(--accent)" />
+        <defs>
+          <linearGradient id="logo-gradient" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#8b5cf6" />
+            <stop offset="0.6" stopColor="#ec4899" />
+            <stop offset="1" stopColor="#fbbf24" />
+          </linearGradient>
+        </defs>
+        <rect width="32" height="32" rx="9" fill="url(#logo-gradient)" />
         <path d="M8 21l5-6 4 4 7-9" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       <span>AI Rank Checker</span>

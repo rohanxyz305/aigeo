@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Nav from '../components/Nav.jsx';
+import { Aurora } from '../components/Effects.jsx';
 import { useAuth } from '../auth.jsx';
 import * as api from '../api.js';
 import { PLATFORMS, averageWords, buildData, pageIssues, pathOf, redditMentions } from '../lib/analysis.js';
@@ -141,6 +142,7 @@ export default function Dashboard() {
 
   return (
     <>
+      <Aurora />
       <Nav />
       <main className="dash">
         <h1>New audit</h1>
@@ -176,9 +178,11 @@ export default function Dashboard() {
             ))}
           </ol>
         )}
+        {running && <div className="scanbar" aria-hidden="true"><i /></div>}
 
         {step === -1 && !error && !discovery && (
           <div className="card empty">
+            <div className="orb" aria-hidden="true" />
             <h2>No audit yet</h2>
             <p>Your results will appear here: crawler access, page problems and one report per platform.</p>
           </div>
@@ -187,9 +191,9 @@ export default function Dashboard() {
         {discovery && (
           <section className="tiles" aria-label="Summary">
             <Tile label="Pages crawled" value={pages.length} />
-            <Tile label="Problems found" value={problems} tone={problems ? 'warn' : 'good'} />
-            <Tile label="Crawlers blocked" value={`${blocked} of ${discovery.robots.bots.length}`} tone={blocked ? 'bad' : 'good'} />
-            <Tile label="Average words per page" value={averageWords(pages)} />
+            <Tile label="Problems found" value={problems} tone={problems ? 'warn' : 'good'} delay={70} />
+            <Tile label="Crawlers blocked" value={`${blocked} of ${discovery.robots.bots.length}`} tone={blocked ? 'bad' : 'good'} delay={140} />
+            <Tile label="Average words per page" value={averageWords(pages)} delay={210} />
           </section>
         )}
 
@@ -203,19 +207,20 @@ export default function Dashboard() {
             </div>
             <div className="tabs" role="tablist">
               {PLATFORMS.map((p) => (
-                <button key={p.id} type="button" role="tab" aria-selected={tab === p.id} onClick={() => setTab(p.id)}>
+                <button key={p.id} type="button" role="tab" aria-selected={tab === p.id} onClick={() => setTab(p.id)}
+                  style={{ '--c': p.color }}>
                   {p.name}
                   <i className={`dot ${reports[p.id]?.state || ''}`} />
                 </button>
               ))}
             </div>
-            <div className="report" role="tabpanel">
+            <div className="report" role="tabpanel" key={tab}>
               {report?.state === 'err' ? (
                 <p className="alert alert-error">{report.error}</p>
               ) : reportHtml ? (
                 <div dangerouslySetInnerHTML={{ __html: reportHtml }} />
               ) : (
-                <p className="muted">Writing the report…</p>
+                <div className="skeleton" role="status" aria-label="Writing the report"><i /><i /><i /><i /></div>
               )}
             </div>
             <p className="hint">
@@ -280,9 +285,9 @@ export default function Dashboard() {
   );
 }
 
-function Tile({ label, value, tone = '' }) {
+function Tile({ label, value, tone = '', delay = 0 }) {
   return (
-    <div className={`tile ${tone}`}>
+    <div className={`tile ${tone}`} style={{ '--d': `${delay}ms` }}>
       <span>{label}</span>
       <b>{value}</b>
     </div>

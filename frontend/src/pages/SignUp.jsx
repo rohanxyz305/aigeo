@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { signup } from '../api.js';
 import { Logo } from '../components/Nav.jsx';
+import { Aurora } from '../components/Effects.jsx';
 
 export default function SignUp() {
   const navigate = useNavigate();
@@ -26,6 +27,7 @@ export default function SignUp() {
 
   return (
     <main className="auth">
+      <Aurora />
       <Logo />
       <form className="card auth-card" onSubmit={submit}>
         <h1>Create your account</h1>

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { login } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { Logo } from '../components/Nav.jsx';
+import { Aurora } from '../components/Effects.jsx';
 
 export default function SignIn() {
   const { signIn } = useAuth();
@@ -29,6 +30,7 @@ export default function SignIn() {
 
   return (
     <main className="auth">
+      <Aurora />
       <Logo />
       <form className="card auth-card" onSubmit={submit}>
         <h1>Sign in</h1>

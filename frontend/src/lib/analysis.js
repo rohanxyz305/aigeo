@@ -1,10 +1,10 @@
 export const PLATFORMS = [
-  { id: 'google', name: 'Google' },
-  { id: 'chatgpt', name: 'ChatGPT' },
-  { id: 'gemini', name: 'Gemini' },
-  { id: 'claude', name: 'Claude' },
-  { id: 'perplexity', name: 'Perplexity' },
-  { id: 'reddit', name: 'Reddit' },
+  { id: 'google', name: 'Google', color: '#60a5fa' },
+  { id: 'chatgpt', name: 'ChatGPT', color: '#34d399' },
+  { id: 'gemini', name: 'Gemini', color: '#a78bfa' },
+  { id: 'claude', name: 'Claude', color: '#fb923c' },
+  { id: 'perplexity', name: 'Perplexity', color: '#22d3ee' },
+  { id: 'reddit', name: 'Reddit', color: '#fb7185' },
 ];
 
 export function pathOf(url) {
