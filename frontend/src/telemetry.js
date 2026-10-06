@@ -1,4 +1,4 @@
-import { ApplicationInsights } from '@microsoft/applicationinsights-web';
+import { ApplicationInsights, DistributedTracingModes } from '@microsoft/applicationinsights-web';
 
 const cs = import.meta.env.VITE_APPINSIGHTS_CONNECTION_STRING;
 
@@ -7,9 +7,11 @@ export const appInsights = cs
       config: {
         connectionString: cs,
         enableAutoRouteTracking: true, // record every page change
-        // Keep false: the backend CORS config only allows Authorization and
-        // Content-Type, so traceparent / Request-Id headers would be blocked.
-        enableCorsCorrelation: false,
+        // Send trace headers on cross-origin calls to the API so the
+        // browser request and the backend request share one trace.
+        enableCorsCorrelation: true,
+        correlationHeaderDomains: ['aigeo-api-rk-hvhvffe3e4c9b8fs.centralindia-01.azurewebsites.net'],
+        distributedTracingMode: DistributedTracingModes.AI_AND_W3C,
       },
     })
   : null;
