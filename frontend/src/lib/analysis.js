@@ -115,3 +115,52 @@ export function averageWords(pages) {
   const ok = pages.filter((p) => p.words != null);
   return ok.length ? Math.round(ok.reduce((n, p) => n + p.words, 0) / ok.length) : 0;
 }
+
+const yesNo = (v) => (v ? 'Yes' : 'No');
+const percent = (v) => `${v}%`;
+
+// [key, label, which direction wins (null = shown for context only), formatter]
+const COMPARE = [
+  ['pages', 'Pages crawled', null, String],
+  ['https', 'HTTPS', 'high', yesNo],
+  ['responseMs', 'Homepage response', 'low', (v) => `${v} ms`],
+  ['blocked', 'Crawlers blocked in robots.txt', 'low', String],
+  ['sitemap', 'XML sitemap', 'high', yesNo],
+  ['llmsTxt', 'llms.txt', 'high', yesNo],
+  ['averageWords', 'Average words per page', 'high', String],
+  ['problemsPerPage', 'Problems per page', 'low', String],
+  ['schema', 'Pages with structured data', 'high', percent],
+  ['author', 'Pages with a named author', 'high', percent],
+  ['date', 'Pages with a date', 'high', percent],
+  ['questions', 'Pages with question headings', 'high', percent],
+];
+
+function siteStats(discovery, pages) {
+  const ok = pages.filter((p) => p.words != null);
+  const share = (test) => (ok.length ? Math.round((ok.filter(test).length / ok.length) * 100) : 0);
+  const problems = pages.reduce((n, p) => n + p.issues.length, 0);
+  return {
+    pages: pages.length,
+    https: discovery.homepage.https,
+    responseMs: discovery.homepage.ms,
+    blocked: discovery.robots.bots.filter((b) => b.status === 'blocked').length,
+    sitemap: discovery.sitemap.found,
+    llmsTxt: discovery.llmsTxt,
+    averageWords: averageWords(pages),
+    problemsPerPage: pages.length ? +(problems / pages.length).toFixed(1) : 0,
+    schema: share((p) => p.schemaTypes.length > 0),
+    author: share((p) => p.hasAuthor),
+    date: share((p) => p.hasDate),
+    questions: share((p) => p.questionHeadings > 0),
+  };
+}
+
+/** Side-by-side crawl signals for two sites; `winner` is 'mine', 'theirs' or null for a tie. */
+export function compareSites(mine, theirs) {
+  const a = siteStats(mine.discovery, mine.pages);
+  const b = siteStats(theirs.discovery, theirs.pages);
+  return COMPARE.map(([key, label, better, format]) => {
+    const diff = better ? (Number(a[key]) - Number(b[key])) * (better === 'low' ? -1 : 1) : 0;
+    return { label, mine: format(a[key]), theirs: format(b[key]), winner: diff > 0 ? 'mine' : diff < 0 ? 'theirs' : null };
+  });
+}

@@ -4,7 +4,7 @@ import Nav from '../components/Nav.jsx';
 import { Aurora } from '../components/Effects.jsx';
 import { useAuth } from '../auth.jsx';
 import * as api from '../api.js';
-import { PLATFORMS, averageWords, buildData, pageIssues, pathOf, redditMentions } from '../lib/analysis.js';
+import { PLATFORMS, averageWords, buildData, compareSites, pageIssues, pathOf, redditMentions } from '../lib/analysis.js';
 import { renderMarkdown } from '../lib/markdown.js';
 import { downloadPdfReport } from '../lib/pdfReport.js';
 
@@ -68,6 +68,8 @@ export default function Dashboard() {
   const runId = useRef(0);
 
   const [site, setSite] = useState('');
+  const [rivalSite, setRivalSite] = useState('');
+  const [rival, setRival] = useState(null); // { state: 'run' | 'done' | 'err', site, count, discovery, pages, error }
   const [max, setMax] = useState(25);
   const [step, setStep] = useState(-1); // -1 idle, 0-2 running, 3 finished
   const [error, setError] = useState('');
@@ -83,6 +85,28 @@ export default function Dashboard() {
   const report = reports[tab];
   const reportHtml = useMemo(() => (report?.text ? renderMarkdown(report.text) : ''), [report?.text]);
   const anyReport = PLATFORMS.some((p) => reports[p.id]?.text);
+  const comparison = useMemo(
+    () => (step >= 2 && rival?.state === 'done' ? compareSites({ discovery, pages }, rival) : null),
+    [step, rival, discovery, pages],
+  );
+
+  /** Crawls the competitor alongside the main audit. A failure here never stops the audit itself. */
+  async function crawlRival(live, mainSite) {
+    const input = rivalSite.trim();
+    if (!input) return;
+    const update = (change) => live() && setRival((prev) => ({ ...prev, ...change }));
+    update({ state: 'run', site: input, count: 0 });
+    try {
+      const found = await api.discover(user.token, input);
+      if (found.site === mainSite) throw new Error('The competitor is the same site as the one being audited.');
+      update({ site: found.site });
+      const crawled = await crawl(user.token, found, max, (_, count) => update({ count }));
+      update({ state: 'done', discovery: found, pages: crawled });
+    } catch (err) {
+      if (err.status === 401) throw err;
+      update({ state: 'err', error: err.message });
+    }
+  }
 
   async function run(e) {
     e.preventDefault();
@@ -95,6 +119,7 @@ export default function Dashboard() {
     setDiscovery(null);
     setPages([]);
     setReports({});
+    setRival(null);
     setTab('google');
     setStep(0);
 
@@ -106,6 +131,7 @@ export default function Dashboard() {
       const [crawled, reddit] = await Promise.all([
         crawl(user.token, found, max, (page) => live() && setPages((prev) => [...prev, page])),
         redditMentions(found.site),
+        crawlRival(live, found.site),
       ]);
       setStep(2);
 
@@ -158,6 +184,11 @@ export default function Dashboard() {
             <input id="site" value={site} onChange={(e) => setSite(e.target.value)} placeholder="example.com"
               autoComplete="off" required disabled={running} />
           </div>
+          <div className="field grow">
+            <label htmlFor="rival">Competitor domain (optional)</label>
+            <input id="rival" value={rivalSite} onChange={(e) => setRivalSite(e.target.value)} placeholder="competitor.com"
+              autoComplete="off" disabled={running} />
+          </div>
           <div className="field">
             <label htmlFor="max">Pages to analyse</label>
             <select id="max" value={max} onChange={(e) => setMax(+e.target.value)} disabled={running}>
@@ -177,7 +208,12 @@ export default function Dashboard() {
               <li key={label} className={i < step ? 'done' : i === step ? 'current' : ''}>
                 <span>{i < step ? '✓' : i + 1}</span>
                 {label}
-                {i === 1 && step === 1 && <em>{pages.length} of up to {max}</em>}
+                {i === 1 && step === 1 && (
+                  <em>
+                    {pages.length} of up to {max}
+                    {rival?.state === 'run' && `, competitor ${rival.count}`}
+                  </em>
+                )}
               </li>
             ))}
           </ol>
@@ -229,6 +265,37 @@ export default function Dashboard() {
             </div>
             <p className="hint">
               Based on what the crawl found on the site. Rankings, traffic, backlinks and brand mentions are not included.
+            </p>
+          </section>
+        )}
+
+        {rival?.state === 'err' && (
+          <p className="alert alert-error" role="alert">Competitor comparison skipped: {rival.error}</p>
+        )}
+
+        {comparison && (
+          <section className="card">
+            <h2>Competitor comparison</h2>
+            <p className="muted">
+              {discovery.site} is ahead on {comparison.filter((r) => r.winner === 'mine').length} signals,{' '}
+              {rival.site} on {comparison.filter((r) => r.winner === 'theirs').length}.
+            </p>
+            <div className="scroll">
+              <table>
+                <thead><tr><th>Signal</th><th>{discovery.site}</th><th>{rival.site}</th></tr></thead>
+                <tbody>
+                  {comparison.map((row) => (
+                    <tr key={row.label}>
+                      <td>{row.label}</td>
+                      <td>{row.winner === 'mine' ? <span className="pill good">{row.mine}</span> : row.mine}</td>
+                      <td>{row.winner === 'theirs' ? <span className="pill good">{row.theirs}</span> : row.theirs}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="hint">
+              Both sites were crawled the same way, up to {max} pages each. The better value in each row is highlighted.
             </p>
           </section>
         )}

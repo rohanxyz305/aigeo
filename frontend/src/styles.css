@@ -253,7 +253,7 @@ select option { background: var(--surface-solid); }
 .dash > .card, .dash > details.card { margin-top: 18px; animation: rise 0.6s var(--ease) both; }
 .dash h2 { font-size: 20px; }
 
-.run-form { display: flex; gap: 14px; align-items: flex-end; margin-top: 22px; animation-delay: 0.1s !important; }
+.run-form { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; margin-top: 22px; animation-delay: 0.1s !important; }
 .run-form label { margin-top: 0; }
 .field { min-width: 170px; }
 .grow { flex: 1; }
